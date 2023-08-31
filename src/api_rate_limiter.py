@@ -56,7 +56,10 @@ class APIRateLimiter():
             IP Address from the client
         """
 
-        self.clean_calls()
+        self.clean_calls() # Clean up calls that were passed decided window time
+
+        # Append to the list if request count is less than the numbers
+        # of calls allowed in the itme interval timeframe
         if len(self.client_requests[ip_address]) < self.count:
             self.client_requests[ip_address].append(time.time()*1000)
             return True
@@ -64,8 +67,9 @@ class APIRateLimiter():
 
     def clean_calls(self):
         """
-        A function that clean up calls after it passed the time interval
+        A function that clean up calls after it passed the decided window time
         """
+        # Remove calls from the list that are passed the decided window time
         for _, requests in self.client_requests.items():
             if requests and self.time_interval < (time.time()*1000 - requests[0]):
                 requests.popleft()
@@ -103,8 +107,11 @@ class RequestHandler(BaseHTTPRequestHandler):
         """
         A function that pass information and calls response method
         """
+        # get client IP address and it's visit list
         ip_address = self.address_string()
         current_requests = self.rate_limiter.client_requests[ip_address]
+
+        # Check whether the IP address reach limit and send approaite messages and response code
         if self.rate_limiter.limit_check(ip_address):
             current_request_count = len(current_requests)
             message = f'current time is:' \
